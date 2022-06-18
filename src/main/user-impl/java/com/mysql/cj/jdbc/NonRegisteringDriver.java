@@ -31,6 +31,7 @@ package com.mysql.cj.jdbc;
 
 import static com.mysql.cj.util.StringUtils.isNullOrEmpty;
 
+import java.sql.Connection;
 import java.sql.DriverPropertyInfo;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
@@ -191,7 +192,6 @@ public class NonRegisteringDriver implements java.sql.Driver {
                  */
                 return null;
             }
-
             ConnectionUrl conStr = ConnectionUrl.getConnectionUrlInstance(url, info);
             switch (conStr.getType()) {
                 case SINGLE_CONNECTION:
