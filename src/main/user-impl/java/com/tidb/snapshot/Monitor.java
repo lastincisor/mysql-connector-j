@@ -84,7 +84,7 @@ public class Monitor {
     }
 
     public void reload(){
-
+        Long start = System.currentTimeMillis();
         System.out.println("Snapshot-tidb_snapshot-reload:id:"+Thread.currentThread().getId()+",ts:"+this.ticdc.getGlobalSecondaryTs().get()+",Globallasttime:"+this.ticdc.getGloballasttime());
         if(this.url == null){
             return;
@@ -113,6 +113,9 @@ public class Monitor {
                             this.ticdc.getGlobalSecondaryTs().set(Long.parseLong(secondaryTs));
                             this.ticdc.getGloballasttime().set(System.currentTimeMillis());
                             System.out.println("Snapshot-tidb_snapshot-reload-db:"+this.ticdc.getGlobalSecondaryTs().get()+",Globallasttime:"+this.ticdc.getGloballasttime());
+                            Long end = System.currentTimeMillis();
+                            System.out.println("Snapshot-tidb_snapshot-reload-db:"+this.ticdc.getGlobalSecondaryTs().get()+",Globallasttime:"+this.ticdc.getGloballasttime());
+                            System.out.println("cdcruntime:getSnapshot:"+(end-start)+",tidbCurrentTs:"+this.ticdc.getGlobalSecondaryTs().get());
                         }
                         //String tidb_snapshot = this.session.queryServerVariable("@@tidb_snapshot");
                         //System.out.println("Snapshot-tidb_snapshot-queryServerVariable:"+tidb_snapshot);

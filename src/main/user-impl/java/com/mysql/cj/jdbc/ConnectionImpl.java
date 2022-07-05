@@ -813,6 +813,7 @@ public class ConnectionImpl implements JdbcConnection, SessionEventListener, Ser
     public void setSnapshot(Boolean init,String sql) throws SQLException{
 
         if(!init){
+            this.session.queryServerVariable("@@tidb_current_ts");
             this.session.setSnapshot("");
             //String tidb_snapshot = this.session.queryServerVariable("@@tidb_snapshot");
             //System.out.println("Snapshot-tidb_snapshot-set empty:"+tidb_snapshot);
@@ -834,19 +835,40 @@ public class ConnectionImpl implements JdbcConnection, SessionEventListener, Ser
         }
     }
 
+    public String getTidbCurrentTs(){
+        try {
+            Long start = System.currentTimeMillis();
+            String tidbCurrentTs = "0";
+            this.setAutoCommit(false);
+            this.begin();
+            tidbCurrentTs =  this.session.queryServerVariable("@@tidb_current_ts");
+            //this.rollback();
+            Long end = System.currentTimeMillis();
+            System.out.println("cdcruntime:getTidbCurrentTs:"+(end-start)+",tidbCurrentTs:"+tidbCurrentTs);
+            return tidbCurrentTs;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public void setSnapshot() throws SQLException{
+        Long begin = System.currentTimeMillis();
+        System.out.println("Snapshot-tidb_snapshot-tidb_current_ts:"+this+"-"+getTidbCurrentTs());
         if(this.ticdc.getGlobalSecondaryTs().get() == 0){
             return;
         }
-
+        Long start = System.currentTimeMillis();
         if(this.secondaryTs.get() != this.ticdc.getGlobalSecondaryTs().get()){
             this.session.setSnapshot(this.ticdc.getGlobalSecondaryTs().get()+"");
             this.secondaryTs.set(this.ticdc.getGlobalSecondaryTs().get());
             System.out.println("Snapshot-tidb_snapshot-set,:GlobalTs"+this.ticdc.getGlobalSecondaryTs().get()+",secondaryTs:"+this.secondaryTs.get());
+            Long end = System.currentTimeMillis();
+            System.out.println("cdcruntime:setSnapshot:"+(end-start)+",tidbCurrentTs:"+this.ticdc.getGlobalSecondaryTs().get());
+            System.out.println("cdcruntime:all:"+(end-begin)+",tidbCurrentTs:"+this.ticdc.getGlobalSecondaryTs().get());
         }
     }
 
-    public void getSnapshot(TICDC ticdc) throws SQLException{
+    public void getSnapshot() throws SQLException{
         String sql = buildTidbSnapshotSql();
         if(sql == null){
             return;
@@ -904,6 +926,54 @@ public class ConnectionImpl implements JdbcConnection, SessionEventListener, Ser
                 }
 
                 this.session.execSQL(null, "commit", -1, null, false, this.nullStatementResultSetFactory, null, false);
+            } catch (SQLException sqlException) {
+                if (MysqlErrorNumbers.SQL_STATE_COMMUNICATION_LINK_FAILURE.equals(sqlException.getSQLState())) {
+                    throw SQLError.createSQLException(Messages.getString("Connection.4"), MysqlErrorNumbers.SQL_STATE_TRANSACTION_RESOLUTION_UNKNOWN,
+                            getExceptionInterceptor());
+                }
+
+                throw sqlException;
+            } finally {
+                this.session.setNeedsPing(this.reconnectAtTxEnd.getValue());
+            }
+        }
+        return;
+    }
+
+    public void begin() throws SQLException {
+        synchronized (getConnectionMutex()) {
+            checkClosed();
+
+            try {
+                if (this.connectionLifecycleInterceptors != null) {
+                    IterateBlock<ConnectionLifecycleInterceptor> iter = new IterateBlock<ConnectionLifecycleInterceptor>(
+                            this.connectionLifecycleInterceptors.iterator()) {
+
+                        @Override
+                        void forEach(ConnectionLifecycleInterceptor each) throws SQLException {
+                            if (!each.commit()) {
+                                this.stopIterating = true;
+                            }
+                        }
+                    };
+
+                    iter.doForAll();
+
+                    if (!iter.fullIteration()) {
+                        return;
+                    }
+                }
+
+                if (this.session.getServerSession().isAutoCommit()) {
+                    throw SQLError.createSQLException(Messages.getString("Connection.3"), getExceptionInterceptor());
+                }
+                if (this.useLocalTransactionState.getValue()) {
+                    if (!this.session.getServerSession().inTransactionOnServer()) {
+                        return; // effectively a no-op
+                    }
+                }
+
+                this.session.execSQL(null, "begin", -1, null, false, this.nullStatementResultSetFactory, null, false);
             } catch (SQLException sqlException) {
                 if (MysqlErrorNumbers.SQL_STATE_COMMUNICATION_LINK_FAILURE.equals(sqlException.getSQLState())) {
                     throw SQLError.createSQLException(Messages.getString("Connection.4"), MysqlErrorNumbers.SQL_STATE_TRANSACTION_RESOLUTION_UNKNOWN,
