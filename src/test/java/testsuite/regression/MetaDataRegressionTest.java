@@ -5325,6 +5325,9 @@ public class MetaDataRegressionTest extends BaseTestCase {
     @Test
     public void testBug104641() throws Exception {
         String databaseName1 = "dbBug104641";
+        if (isServerRunningOnWindows()) {
+            databaseName1 = databaseName1.toLowerCase();
+        }
         createDatabase(databaseName1);
         createTable(databaseName1 + ".table1",
                 "(`CREATED` datetime DEFAULT NULL,`ID` bigint NOT NULL AUTO_INCREMENT,`LRN_ID` bigint DEFAULT '0',`USERNAME` varchar(50) NOT NULL,"
@@ -5462,6 +5465,45 @@ public class MetaDataRegressionTest extends BaseTestCase {
                 }
 
                 con.close();
+            }
+        }
+    }
+
+    /**
+     * Tests fix for Bug#106758 (33973048), DatabaseMetaData.getTypeInfo returns AUTO_INCREMENT = false for all datatypes.
+     * 
+     * @throws Exception
+     */
+    @Test
+    public void testBug106758() throws Exception {
+        DatabaseMetaData dbmd = this.conn.getMetaData();
+
+        this.rs = dbmd.getTypeInfo();
+        while (this.rs.next()) {
+            StringBuilder sb = new StringBuilder("CREATE TEMPORARY TABLE testBug106758 (col ");
+            sb.append(this.rs.getString("TYPE_NAME"));
+            if (this.rs.getString("CREATE_PARAMS").startsWith("(M)")) {
+                sb.append("(5)");
+            } else if (this.rs.getString("CREATE_PARAMS").startsWith("('value")) {
+                sb.append(" ('value')");
+            }
+            sb.append(" AUTO_INCREMENT PRIMARY KEY)"); // Some types don't support primary keys like this, however, the query fails due to AUTO_INCREMENT first. 
+
+            if (this.rs.getBoolean("AUTO_INCREMENT")) {
+                try {
+                    this.stmt.execute(sb.toString());
+                } catch (SQLException e) {
+                    fail("Type " + this.rs.getString("TYPE_NAME") + " does not support AUTO_INCREMENT.");
+                } finally {
+                    this.stmt.execute("DROP TABLE IF EXISTS testBug106758");
+                }
+            } else {
+                assertThrows("Type " + this.rs.getString("TYPE_NAME") + " supports AUTO_INCREMENT.", SQLException.class,
+                        "Incorrect column specifier for column 'col'", () -> {
+                            this.stmt.execute(sb.toString());
+                            this.stmt.execute("DROP TABLE IF EXISTS testBug106758");
+                            return null;
+                        });
             }
         }
     }
