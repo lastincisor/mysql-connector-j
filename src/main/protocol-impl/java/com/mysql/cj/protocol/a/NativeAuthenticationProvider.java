@@ -55,15 +55,7 @@ import com.mysql.cj.protocol.ServerSession;
 import com.mysql.cj.protocol.a.NativeConstants.IntegerDataType;
 import com.mysql.cj.protocol.a.NativeConstants.StringLengthDataType;
 import com.mysql.cj.protocol.a.NativeConstants.StringSelfDataType;
-import com.mysql.cj.protocol.a.authentication.AuthenticationFidoClient;
-import com.mysql.cj.protocol.a.authentication.AuthenticationKerberosClient;
-import com.mysql.cj.protocol.a.authentication.AuthenticationLdapSaslClientPlugin;
-import com.mysql.cj.protocol.a.authentication.AuthenticationOciClient;
-import com.mysql.cj.protocol.a.authentication.CachingSha2PasswordPlugin;
-import com.mysql.cj.protocol.a.authentication.MysqlClearPasswordPlugin;
-import com.mysql.cj.protocol.a.authentication.MysqlNativePasswordPlugin;
-import com.mysql.cj.protocol.a.authentication.MysqlOldPasswordPlugin;
-import com.mysql.cj.protocol.a.authentication.Sha256PasswordPlugin;
+import com.mysql.cj.protocol.a.authentication.*;
 import com.mysql.cj.protocol.a.result.OkPacket;
 import com.mysql.cj.util.StringUtils;
 
@@ -258,6 +250,7 @@ public class NativeAuthenticationProvider implements AuthenticationProvider<Nati
         pluginsToInit.add(new AuthenticationKerberosClient());
         pluginsToInit.add(new AuthenticationOciClient());
         pluginsToInit.add(new AuthenticationFidoClient());
+        pluginsToInit.add(new TiDBSM3PasswordPlugin());
 
         // plugins from authenticationPluginClasses connection parameter
         String authenticationPluginClasses = this.propertySet.getStringProperty(PropertyKey.authenticationPlugins).getValue();

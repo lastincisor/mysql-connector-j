@@ -209,6 +209,7 @@ public enum PropertyKey {
     serverAffinityOrder("serverAffinityOrder", true), //
     serverConfigCacheFactory("serverConfigCacheFactory", true), //
     serverRSAPublicKeyFile("serverRSAPublicKeyFile", true), //
+    sm3Auth("sm3Auth", true), //
     sessionVariables("sessionVariables", true), //
     slowQueryThresholdMillis("slowQueryThresholdMillis", true), //
     slowQueryThresholdNanos("slowQueryThresholdNanos", true), //

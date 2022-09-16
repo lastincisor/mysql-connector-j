@@ -32,14 +32,23 @@ package com.mysql.cj.protocol;
 import java.security.DigestException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
 
 import com.mysql.cj.exceptions.AssertionFailedException;
 import com.mysql.cj.util.StringUtils;
+import org.bouncycastle.crypto.digests.SM3Digest;
+import org.bouncycastle.crypto.macs.HMac;
+import org.bouncycastle.crypto.params.KeyParameter;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 /**
  * Methods for doing secure authentication with MySQL-4.1 and newer.
  */
 public class Security {
+
+    static {
+        java.security.Security.addProvider(new BouncyCastleProvider());
+    }
 
     private static int CACHING_SHA2_DIGEST_LENGTH = 32;
 
@@ -177,6 +186,14 @@ public class Security {
         xorString(dig1, mysqlScrambleBuff, scramble1, CACHING_SHA2_DIGEST_LENGTH);
 
         return mysqlScrambleBuff;
+    }
+
+    public static byte[] SM3Hashing(byte[] srcData){
+        SM3Digest digest = new SM3Digest();
+        digest.update(srcData, 0, srcData.length);
+        byte[] hash = new byte[digest.getDigestSize()];
+        digest.doFinal(hash, 0);
+        return hash;
     }
 
     /**

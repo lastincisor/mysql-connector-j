@@ -757,7 +757,7 @@ See also com.mysql.cj.conf.PropertyDefinitions.SYSP_* variables for other test o
 
         <property name="com.mysql.cj.build.meta-inf.crypto-imports" value="javax.net.ssl;javax.crypto;javax.crypto.spec;resolution:=optional" />
         <property name="com.mysql.cj.build.meta-inf.security-imports"
-                  value="javax.security.auth;javax.security.auth.callback;javax.security.auth.login;javax.security.auth.x500;javax.security.sasl;resolution:=optional" />
+                  value="javax.security.auth;javax.security.auth.callback;javax.security.auth.login;javax.security.auth.x500;javax.security.sasl;org.bouncycastle.crypto.digests.SM3Digest;resolution:=optional" />
         <property name="com.mysql.cj.build.meta-inf.jdbc4-imports"
                   value="javax.xml.parsers;javax.xml.stream;javax.xml.transform;javax.xml.transform.dom;javax.xml.transform.sax;javax.xml.transform.stax;javax.xml.transform.stream;org.w3c.dom;org.xml.sax;org.xml.sax.helpers;resolution:=optional" />
         <property name="com.mysql.cj.build.meta-inf.jee-imports"

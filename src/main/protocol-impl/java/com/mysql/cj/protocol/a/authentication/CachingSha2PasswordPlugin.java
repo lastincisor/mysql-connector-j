@@ -53,7 +53,7 @@ public class CachingSha2PasswordPlugin extends Sha256PasswordPlugin {
         FAST_AUTH_SEND_SCRAMBLE, FAST_AUTH_READ_RESULT, FAST_AUTH_COMPLETE, FULL_AUTH;
     }
 
-    private AuthStage stage = AuthStage.FAST_AUTH_SEND_SCRAMBLE;
+    protected AuthStage stage = AuthStage.FAST_AUTH_SEND_SCRAMBLE;
 
     @Override
     public void init(Protocol<NativePacketPayload> prot) {
