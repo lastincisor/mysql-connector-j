@@ -33,7 +33,7 @@ import com.mysql.cj.Messages;
 import com.mysql.cj.exceptions.CJException;
 import com.mysql.cj.exceptions.ExceptionFactory;
 import com.mysql.cj.exceptions.UnableToConnectException;
-import com.mysql.cj.protocol.Security;
+import com.mysql.cj.protocol.SecuritySm3;
 import com.mysql.cj.protocol.a.NativeConstants;
 import com.mysql.cj.protocol.a.NativePacketPayload;
 import com.mysql.cj.util.StringUtils;
@@ -65,7 +65,7 @@ public class TiDBSM3PasswordPlugin extends CachingSha2PasswordPlugin {
                     // seed is the auth plugin data in AuthSwitchRequest
                     // https://dev.mysql.com/doc/internals/en/connection-phase-packets.html#packet-Protocol::AuthSwitchRequest
                     this.seed = fromServer.readString(NativeConstants.StringSelfDataType.STRING_TERM, null);
-                    toServer.add(new NativePacketPayload(Security.SM3Hashing(
+                    toServer.add(new NativePacketPayload(SecuritySm3.SM3Hashing(
                             StringUtils.getBytes(this.password, this.protocol.getServerSession().getCharsetSettings().getPasswordCharacterEncoding()))));
                     this.stage = AuthStage.FAST_AUTH_READ_RESULT;
                     return true;

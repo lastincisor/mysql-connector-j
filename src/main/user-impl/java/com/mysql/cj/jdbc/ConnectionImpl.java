@@ -952,7 +952,7 @@ public class ConnectionImpl implements JdbcConnection, SessionEventListener, Ser
                     throw SQLError.createSQLException(Messages.getString("Connection.3"), getExceptionInterceptor());
                 }
                 if (this.useLocalTransactionState.getValue()) {
-                    if (!this.session.getServerSession().inTransactionOnServer()) {
+                    if (this.session.getServerSession().isAutocommit()) {
                         return; // effectively a no-op
                     }
                 }
@@ -2103,7 +2103,7 @@ public class ConnectionImpl implements JdbcConnection, SessionEventListener, Ser
     private void rollbackNoChecks() throws SQLException {
         synchronized (getConnectionMutex()) {
             if (this.useLocalTransactionState.getValue()) {
-                if (!this.session.getServerSession().inTransactionOnServer()) {
+                if (this.session.getServerSession().isAutocommit()) {
                     return; // effectively a no-op
                 }
             }
