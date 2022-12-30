@@ -12539,4 +12539,135 @@ public class StatementRegressionTest extends BaseTestCase {
             testConn.close();
         } while (useSPS = !useSPS);
     }
+
+    /**
+     * Tests fix for Bug#104753 (Bug#33286177), PreparedStatement.setFetchSize(0) causes ArrayIndexOutOfBoundsException.
+     * 
+     * @throws Exception
+     */
+    @Test
+    public void testBug104753() throws Exception {
+        createTable("testBug104753", "(id BIGINT NOT NULL, PRIMARY KEY (id))");
+
+        Consumer<Integer> runQuery = (f) -> { // fetchSize
+            try {
+                this.pstmt.setFetchSize(f);
+                this.pstmt.execute();
+                this.rs = this.pstmt.getResultSet();
+                assertTrue(this.rs.next());
+                assertEquals(1, this.rs.getInt(1));
+            } catch (Throwable e) {
+                fail("Exception not expected");
+            }
+        };
+
+        this.stmt.executeUpdate("INSERT INTO testBug104753 VALUES (1)");
+
+        Properties props = new Properties();
+        props.setProperty(PropertyKey.sslMode.getKeyName(), SslMode.DISABLED.name());
+        props.setProperty(PropertyKey.allowPublicKeyRetrieval.getKeyName(), "true");
+        props.setProperty(PropertyKey.useServerPrepStmts.getKeyName(), "true");
+        props.setProperty(PropertyKey.useCursorFetch.getKeyName(), "true");
+
+        // With prepared statements cache, COM_STMT_RESET sent.
+        props.setProperty(PropertyKey.cachePrepStmts.getKeyName(), "true");
+        Connection testConn = getConnectionWithProps(props);
+
+        this.pstmt = testConn.prepareStatement("SELECT id FROM testBug104753");
+        runQuery.accept(0);
+        this.pstmt.close();
+        this.pstmt = testConn.prepareStatement("SELECT id FROM testBug104753");
+        runQuery.accept(1);
+        this.pstmt.close();
+        this.pstmt = testConn.prepareStatement("SELECT id FROM testBug104753");
+        runQuery.accept(0);
+        this.pstmt.close();
+        this.pstmt = testConn.prepareStatement("SELECT id FROM testBug104753");
+        runQuery.accept(0);
+        this.pstmt.close();
+        this.pstmt = testConn.prepareStatement("SELECT id FROM testBug104753");
+        runQuery.accept(1);
+        this.pstmt.close();
+
+        testConn.close();
+
+        // No prepared statements cache, no COM_STMT_RESET sent.
+        props.setProperty(PropertyKey.cachePrepStmts.getKeyName(), "false");
+        testConn = getConnectionWithProps(props);
+
+        this.pstmt = testConn.prepareStatement("SELECT id FROM testBug104753");
+        runQuery.accept(0);
+        runQuery.accept(1);
+        runQuery.accept(0);
+        runQuery.accept(0);
+        runQuery.accept(1);
+
+        testConn.close();
+    }
+
+    /**
+     * Tests fix for Bug#107222 (Bug#34150112), ClientPreparedStatement.toString() no longer interpolates byte arrays.
+     * 
+     * @throws Exception
+     */
+    @Test
+    public void testBug107222() throws Exception {
+        boolean useSPS = false;
+        boolean setMax = false;
+
+        createTable("testBug107222", "(b1 VARBINARY(100), b2 VARBINARY(100), i1 INT)");
+        do {
+            Properties props = new Properties();
+            props.setProperty(PropertyKey.sslMode.getKeyName(), SslMode.DISABLED.name());
+            props.setProperty(PropertyKey.allowPublicKeyRetrieval.getKeyName(), "true");
+            props.setProperty(PropertyKey.useServerPrepStmts.getKeyName(), Boolean.toString(useSPS));
+            if (setMax) {
+                props.setProperty(PropertyKey.maxByteArrayAsHex.getKeyName(), "10");
+            }
+            Connection testConn = getConnectionWithProps(props);
+
+            final String testCase = String.format("Case [SPS: %s, SetMax: %s]", useSPS ? "Y" : "N", setMax ? "Y" : "N");
+            String expectedInterpolation = setMax ? "** BYTE ARRAY DATA **" : "x'4d7953514c20436f6e6e6563746f722f4a'";
+
+            this.pstmt = testConn.prepareStatement("INSERT INTO testBug107222 VALUES (?, ?, ?)");
+            this.pstmt.setBytes(1, "MySQL Connector/J".getBytes());
+            this.pstmt.setString(2, null);
+            this.pstmt.setNull(3, Types.INTEGER);
+            this.pstmt.execute();
+
+            String sql = this.pstmt.unwrap(JdbcPreparedStatement.class).toString();
+            int startPos = sql.indexOf("testBug107222");
+            assertTrue(startPos > 0, testCase);
+            int pos = sql.indexOf(expectedInterpolation, startPos);
+            assertTrue(pos > 0, testCase);
+            startPos = pos + expectedInterpolation.length();
+            pos = sql.indexOf("NULL", startPos);
+            assertTrue(pos > 0, testCase);
+            startPos = pos + "NULL".length();
+            pos = sql.indexOf("NULL", startPos);
+            assertTrue(pos > 0, testCase);
+            startPos = pos + "NULL".length();
+            assertEquals(-1, sql.indexOf("NULL", startPos), testCase);
+
+            this.pstmt = testConn.prepareStatement("SELECT ?, ?, ?");
+            this.pstmt.setString(1, null);
+            this.pstmt.setBytes(2, "MySQL Connector/J".getBytes());
+            this.pstmt.setNull(3, Types.BOOLEAN);
+            this.pstmt.executeQuery();
+
+            sql = this.pstmt.unwrap(JdbcPreparedStatement.class).toString();
+            startPos = sql.indexOf("SELECT");
+            assertTrue(startPos > 0, testCase);
+            pos = sql.indexOf("NULL", startPos);
+            assertTrue(pos > 0, testCase);
+            startPos = pos + "NULL".length();
+            pos = sql.indexOf(expectedInterpolation, startPos);
+            assertTrue(pos > 0, testCase);
+            startPos = pos + expectedInterpolation.length();
+            pos = sql.indexOf("NULL", startPos);
+            assertTrue(pos > 0, testCase);
+            startPos = pos + "NULL".length();
+            assertEquals(-1, sql.indexOf("NULL", startPos), testCase);
+        } while ((useSPS = !useSPS) && (setMax = !setMax));
+    }
 }

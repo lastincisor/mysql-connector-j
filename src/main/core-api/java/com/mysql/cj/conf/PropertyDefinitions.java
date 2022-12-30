@@ -50,7 +50,6 @@ public class PropertyDefinitions {
     public static final String SYSP_os_name = "os.name";
     public static final String SYSP_os_arch = "os.arch";
     public static final String SYSP_os_version = "os.version";
-    public static final String SYSP_file_encoding = "file.encoding";
 
     /*
      * Operational system properties.
@@ -742,6 +741,9 @@ public class PropertyDefinitions {
 
                 new IntegerPropertyDefinition(PropertyKey.maxQuerySizeToLog, 2048, RUNTIME_MODIFIABLE,
                         Messages.getString("ConnectionProperties.maxQuerySizeToLog"), "3.1.3", CATEGORY_DEBUGING_PROFILING, 3, 0, Integer.MAX_VALUE),
+
+                new IntegerPropertyDefinition(PropertyKey.maxByteArrayAsHex, 1024, RUNTIME_MODIFIABLE,
+                        Messages.getString("ConnectionProperties.maxByteArrayAsHex"), "8.0.31", CATEGORY_DEBUGING_PROFILING, 4, 0, Integer.MAX_VALUE),
 
                 new BooleanPropertyDefinition(PropertyKey.profileSQL, DEFAULT_VALUE_FALSE, RUNTIME_MODIFIABLE,
                         Messages.getString("ConnectionProperties.profileSQL"), "3.1.0", CATEGORY_DEBUGING_PROFILING, 4),

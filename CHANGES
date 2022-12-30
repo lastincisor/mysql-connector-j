@@ -1,6 +1,20 @@
 # Changelog
 # https://dev.mysql.com/doc/relnotes/connector-j/8.0/en/
 
+Version 8.0.31
+
+  - Fix for Bug#33637993, Loss of backslashes in data after modify api is used.
+
+  - Fix for Bug#34529014, JSonParser not accepting valid JSON string when converting to DbDoc.
+
+  - Fix for Bug#67828 (Bug#15967406), Crashing applets due to reading file.encoding system property.
+
+  - WL#15259, Review maven publishing process.
+
+  - Fix for Bug#107222 (Bug#34150112), ClientPreparedStatement.toString() no longer interpolates byte arrays.
+
+  - Fix for Bug#104753 (Bug#33286177), PreparedStatement.setFetchSize(0) causes ArrayIndexOutOfBoundsException.
+
 Version 8.0.30
 
   - Fix for Bug#107510 (Bug#34259416), Empty string given to set() from Collection.modify() replaces full document.
